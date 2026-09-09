@@ -5,8 +5,14 @@
 支持两种输入：
   1) 目录扫描（--dir）：遍历子目录，为每个 .wav 找同名 .txt（AISHELL / LibriSpeech 风格）。
   2) kaldi 风格（--wav-scp + --text）：
-        wav.scp:  <key> <path>
-        text:     <key> <transcription...>
+         wav.scp:  <key> <path>
+         text:     <key> <transcription...>
+  3) AISHELL 风格（--wav-scp + --transcript）：
+         wav.scp:  <key> <path>
+         transcript: 全局 `key 文本` 文件
+
+当 wav.scp 中保存的是另一台机器上的绝对路径时，可用 --wav-root 将不存在的
+路径按文件名回退到本机音频目录。
 
 用法：
     python -m dasr.data.build_speech_manifest --dir /data/aishell1 \
@@ -75,6 +81,47 @@ def _from_kaldi(wav_scp: str, text: str, lang: str, concat_chinese: bool = False
     return records
 
 
+def _from_wav_scp_global_transcript(
+    wav_scp: str,
+    transcript: str,
+    lang: str,
+    concat_chinese: bool = False,
+    wav_root: Optional[str] = None,
+) -> List[Dict]:
+    """Pair a Kaldi wav.scp with an AISHELL-style global transcript."""
+    wav_map: Dict[str, str] = {}
+    with open(wav_scp, encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().split(maxsplit=1)
+            if len(parts) == 2:
+                wav_path = parts[1]
+                if wav_root and not os.path.exists(wav_path):
+                    wav_path = os.path.join(wav_root, os.path.basename(wav_path))
+                wav_map[parts[0]] = wav_path
+
+    records: List[Dict] = []
+    no_wav = 0
+    with open(transcript, encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().split(maxsplit=1)
+            if len(parts) != 2:
+                continue
+            key, txt = parts[0], parts[1].strip()
+            if key not in wav_map:
+                no_wav += 1
+                continue
+            if concat_chinese:
+                txt = txt.replace(" ", "").replace("\t", "")
+            if not txt:
+                continue
+            records.append({"key": key, "wav": wav_map[key], "txt": txt, "lang": lang})
+    print(
+        f"[pairing] transcript={len(records) + no_wav} wav_scp={len(wav_map)} "
+        f"matched={len(records)} transcript_no_wav={no_wav}"
+    )
+    return records
+
+
 def _from_global_transcript(root: str, transcript: str, lang: str,
                             concat_chinese: bool = False) -> List[Dict]:
     """AISHELL 风格：`--dir` 下所有 wav + 一个全局转录文件（`key 文本`）。"""
@@ -111,6 +158,10 @@ def main() -> None:
     parser.add_argument("--transcript", default=None, help="全局转录文件（key 文本，AISHELL 风格）")
     parser.add_argument("--wav-scp", default=None, help="kaldi 风格 wav.scp")
     parser.add_argument("--text", default=None, help="kaldi 风格 text")
+    parser.add_argument(
+        "--wav-root", default=None,
+        help="wav.scp 中路径不存在时，按文件名回退到该音频目录",
+    )
     parser.add_argument("--wav-ext", default=".wav")
     parser.add_argument("--txt-ext", default=".txt")
     parser.add_argument("--lang", default="zh", choices=["zh", "en", "other"])
@@ -121,7 +172,13 @@ def main() -> None:
     parser.add_argument("--max-duration-s", type=float, default=20.0)
     args = parser.parse_args()
 
-    if args.dir and args.transcript:
+    if args.wav_scp and args.transcript:
+        records = _from_wav_scp_global_transcript(
+            args.wav_scp, args.transcript, args.lang,
+            concat_chinese=args.concat_chinese,
+            wav_root=args.wav_root,
+        )
+    elif args.dir and args.transcript:
         records = _from_global_transcript(args.dir, args.transcript, args.lang,
                                           concat_chinese=args.concat_chinese)
     elif args.dir:
@@ -131,7 +188,10 @@ def main() -> None:
         records = _from_kaldi(args.wav_scp, args.text, args.lang,
                               concat_chinese=args.concat_chinese)
     else:
-        raise SystemExit("必须提供 --dir+--transcript、--dir 或 --wav-scp/--text")
+        raise SystemExit(
+            "必须提供 --dir+--transcript、--dir、--wav-scp/--text "
+            "或 --wav-scp/--transcript"
+        )
 
     # 时长过滤（用 wave/soundfile 读取头部）
     if args.min_duration_s > 0 or args.max_duration_s < 1e9:

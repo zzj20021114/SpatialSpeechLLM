@@ -1,0 +1,69 @@
+TSE 第一阶段数据契约
+====================
+
+目标
+----
+构造理想双说话人 FOA 场景，为后续目标说话人提取（TSE）、目标 ASR、
+说话人一致性和目标方位联合优化提供完全可追踪的监督数据。
+
+第一阶段条件
+------------
+1. 两个不同说话人。
+2. 两段语音从时间 0 开始重叠。
+3. 无背景噪声、无混响、点源 SN3D FOA 空间化。
+4. target speaker 的 enrollment 使用同一说话人的另一条语音。
+5. target 与 interferer 的方位在左/右有效区间内随机采样。
+6. train/dev/test 应按 speaker_id 隔离，不能让同一说话人跨 split 出现。
+
+目录
+----
+每个 split 的输出目录包含：
+
+audio/<split>/<pair_id>.wav         四通道混合 FOA，DCASE [W,Y,Z,X]
+target/<split>/<pair_id>.wav        目标说话人干净单声道语音
+interferer/<split>/<pair_id>.wav    干扰说话人干净单声道语音
+enrollment/<split>/<pair_id>.wav    目标说话人的参考语音
+manifest.jsonl                      标签和相对路径
+
+manifest 关键字段
+-----------------
+pair_id                 样本唯一 ID
+mixture_audio           混合 FOA 相对路径
+target_clean_audio      目标干净语音相对路径
+interferer_audio        干扰语音相对路径
+enrollment_audio        目标参考语音相对路径
+target_transcription    目标说话人的转录
+target_speaker_id       目标说话人 ID
+target_azimuth_deg      目标方位角
+target_elevation_deg    目标仰角
+target_side             左或右
+source_refs             target/interferer 的完整身份和 DOA 信息
+active_samples          未补零前的有效语音样本数，用于构造 VAD 标签
+
+监督关系
+--------
+mixture_foa = target_foa + interferer_foa（第一阶段无噪声）
+target_foa 由 target_clean_audio 和 target DOA 按 SN3D FOA 公式得到。
+target_clean_audio 是 TSE 输出的 SI-SDR 监督目标。
+enrollment_audio 用于 speaker embedding 或 enrollment cross-attention。
+target_side/target_azimuth_deg 用于空间定位监督。
+target_transcription 用于目标 ASR 语言建模监督。
+source_refs 中的 active_samples 用于区分补零区域和有效语音区域。
+
+生成命令
+--------
+先用 AISHELL 的 scp 和全局转录构建语音 manifest：
+
+python -m dasr.data.build_speech_manifest \
+  --wav-scp /public/AISHELL1/data/wav/train/train.scp \
+  --transcript /public/AISHELL1/data_aishell/transcript/aishell_transcript_v0.8.txt \
+  --wav-root /public/AISHELL1/data/wav/train/wav \
+  --output data/speech/aishell_train.jsonl --lang zh
+
+再生成 TSE 场景：
+
+python -m dasr.data.generate_tse_mixtures \
+  --speech-manifest data/speech/train.jsonl \
+  --output-dir data/tse/train --split train
+
+当前实现不把 data/ 下的大音频加入 Git；脚本、契约和测试纳入版本控制。

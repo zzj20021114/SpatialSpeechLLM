@@ -1,0 +1,60 @@
+项目修改日志
+============
+
+[2026-09-09] 第一阶段：理想双说话人 TSE 仿真数据
+
+修改脚本/文件：
+1. dasr/data/generate_tse_mixtures.py
+   原因：新增独立的双说话人 FOA 仿真管线，保存 mixture、target clean、
+   interferer、enrollment 和目标方位标签，为 TSE、ASR、speaker embedding、
+   VAD 及 DOA 联合训练提供完整监督。保留原 generate_synthetic_foa.py，
+   避免破坏现有单说话人定向 ASR 数据管线。
+
+2. docs/tse_data_contract.txt
+   原因：固定第一阶段理想仿真数据的字段、目录、空间音频约定和监督关系，
+   为后续性别识别、情绪识别等任务扩展统一数据接口。
+
+3. tests/test_tse_data.py
+   原因：验证说话人 ID 推断、左右方位映射、FOA 混合可加性、enrollment 与
+   target 身份一致性以及 target/interferer 身份隔离。
+
+4. docs/change_log.txt
+   原因：按项目要求记录本次修改的文件和修改原因；后续每次代码或配置修改
+   都必须在本文件追加独立条目。
+
+[2026-09-09] 修正 TSE 源语音有效长度记录
+
+修改脚本/文件：
+1. dasr/data/generate_tse_mixtures.py
+   原因：场景中不同长度的语音会被补零到共同长度；增加 active_samples，
+   保留补零前的有效长度，避免后续 VAD 标签把补零区域误认为活动语音。
+
+2. docs/tse_data_contract.txt
+   原因：补充 active_samples 字段及其 VAD 监督用途。
+
+[2026-09-09] 支持公共 AISHELL scp 高效配对
+
+修改脚本/文件：
+1. dasr/data/build_speech_manifest.py
+   原因：/public/AISHELL1 含有 train.scp/dev.scp/test.scp 和全局转录文件；
+   新增 --wav-scp + --transcript 模式，避免扫描增强目录和 HDF5 文件。
+
+2. tests/test_tse_data.py
+   原因：验证 wav.scp 与全局转录按 key 配对、中文空格清理和缺失音频过滤。
+
+[2026-09-09] 支持迁移后的 wav.scp 本地路径回退
+
+修改脚本/文件：
+1. dasr/data/build_speech_manifest.py
+   原因：公共 AISHELL 的 train.scp 保存了其他机器的绝对路径；新增 --wav-root，
+   对不存在的路径按文件名映射到当前机器的音频目录。
+
+2. tests/test_tse_data.py
+   原因：验证 wav-root 能替换不可用的旧路径，同时保留正常配对和文本处理行为。
+
+[2026-09-09] 补充公共 AISHELL 数据生成命令
+
+修改脚本/文件：
+1. docs/tse_data_contract.txt
+   原因：记录 /public/AISHELL1 的 scp、全局转录和本地路径回退参数，确保
+   理想 TSE 数据可从当前公共数据目录复现。
