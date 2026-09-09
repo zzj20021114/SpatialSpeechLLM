@@ -7,6 +7,51 @@ import torch
 import torch.nn.functional as F
 
 
+def complex_mask_to_waveform(
+    mask_logits: torch.Tensor,
+    mixture_foa: torch.Tensor,
+    n_fft: int = 400,
+    hop_length: int = 160,
+    win_length: int = 400,
+) -> torch.Tensor:
+    """Apply a bounded complex mask to mixture W and reconstruct target audio."""
+    if mask_logits.ndim != 3 or mixture_foa.ndim != 3 or mixture_foa.shape[1] != 4:
+        raise ValueError("mask_logits 需 [B,T,C]，mixture_foa 需 [B,4,T]")
+    window = torch.hann_window(win_length, device=mixture_foa.device)
+    mixture_w = mixture_foa[:, 0]
+    mixture_spec = torch.stft(
+        mixture_w,
+        n_fft=n_fft,
+        hop_length=hop_length,
+        win_length=win_length,
+        window=window,
+        center=True,
+        return_complex=True,
+    )
+    freq_bins = mixture_spec.shape[1]
+    if mask_logits.shape[-1] != 2 * freq_bins:
+        raise ValueError(
+            f"mask 频率维应为 {2 * freq_bins}，得到 {mask_logits.shape[-1]}"
+        )
+    mask = F.interpolate(
+        mask_logits.transpose(1, 2),
+        size=mixture_spec.shape[-1],
+        mode="linear",
+        align_corners=False,
+    ).transpose(1, 2)
+    mask = torch.complex(torch.tanh(mask[..., :freq_bins]), torch.tanh(mask[..., freq_bins:]))
+    estimated_spec = mask.permute(0, 2, 1) * mixture_spec
+    return torch.istft(
+        estimated_spec,
+        n_fft=n_fft,
+        hop_length=hop_length,
+        win_length=win_length,
+        window=window,
+        center=True,
+        length=mixture_foa.shape[-1],
+    )
+
+
 def si_sdr(
     estimate: torch.Tensor,
     target: torch.Tensor,
@@ -73,3 +118,13 @@ def combine_tse_losses(
     if total is None:
         raise ValueError("losses 不能为空")
     return total
+
+
+def doa_targets_from_angles(azimuth_deg: torch.Tensor, elevation_deg: torch.Tensor) -> torch.Tensor:
+    az = torch.deg2rad(azimuth_deg)
+    el = torch.deg2rad(elevation_deg)
+    return torch.stack([
+        torch.cos(el) * torch.cos(az),
+        torch.cos(el) * torch.sin(az),
+        torch.sin(el),
+    ], dim=-1)

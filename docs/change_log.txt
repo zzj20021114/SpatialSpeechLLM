@@ -98,3 +98,16 @@
 
 7. tests/test_tse_model.py
    原因：验证目标条件模块和多任务头的张量形状及损失数值稳定性；无 torch 环境时自动跳过。
+
+[2026-09-09] 第四阶段：共享 target token 的联合 TSE-ASR 模型
+
+修改脚本/文件：
+1. dasr/model/joint_model.py
+   原因：将 target-conditioned token 同时连接 Projector/Qwen 接口和 TSE、VAD、
+   DOA、speaker 头，避免把 waveform 提取结果硬级联到 ASR。
+
+2. dasr/model/tse_losses.py
+   原因：增加 complex mask 到目标波形的可微重建和角度目标转换，支持共享表示的联合 loss。
+
+3. dasr/model/__init__.py 和 tests/test_tse_model.py
+   原因：导出联合模型并增加 mask 重建输出形状与数值稳定性测试。

@@ -21,6 +21,7 @@ from .enrollment_encoder import EnrollmentEncoder  # noqa: F401
 from .target_fusion import TargetFusion  # noqa: F401
 from .target_conditioned_encoder import TargetConditionedSpatialEncoder  # noqa: F401
 from .tse_heads import TseMaskHead, TseMultiTaskHeads  # noqa: F401
+from .joint_model import JointTargetSpeechModel  # noqa: F401
 
 
 def build_model(cfg: DasrConfig) -> DasrEncoderDecoder:

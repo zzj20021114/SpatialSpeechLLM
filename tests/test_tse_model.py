@@ -14,6 +14,7 @@ from dasr.model.target_fusion import TargetFusion  # noqa: E402
 from dasr.model.tse_heads import TseMultiTaskHeads  # noqa: E402
 from dasr.model.tse_losses import (  # noqa: E402
     combine_tse_losses,
+    complex_mask_to_waveform,
     si_sdr,
     speaker_consistency_loss,
 )
@@ -53,3 +54,12 @@ def test_tse_losses_are_finite():
     total = combine_tse_losses({"sdr": -sdr.mean(), "speaker": speaker})
     assert torch.isfinite(sdr).all()
     assert torch.isfinite(total)
+
+
+def test_complex_mask_reconstruction_shape():
+    torch.manual_seed(1)
+    mixture = torch.randn(2, 4, 1600)
+    mask_logits = torch.randn(2, 10, 402) * 0.1
+    estimated = complex_mask_to_waveform(mask_logits, mixture)
+    assert estimated.shape == (2, 1600)
+    assert torch.isfinite(estimated).all()
