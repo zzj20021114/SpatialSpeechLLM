@@ -40,6 +40,20 @@ teacher_embedding（可选）[B,E]，由冻结的 WavLM/ECAPA/WeSpeaker teacher 
 embedding 与 teacher 的 cosine distillation；第二阶段再加入 TSE、VAD、DOA 和 ASR
 联合损失。teacher embedding 不反向传播，teacher 模型本身保持冻结。
 
+Teacher embedding 生成
+----------------------
+指定一个冻结的 speaker teacher（例如 WavLM speaker-verification checkpoint）：
+
+python -m dasr.data.extract_teacher_embeddings \
+  --manifest data/tse/train/manifest.jsonl \
+  --output data/tse/train/manifest_teacher.jsonl \
+  --model-id <speaker-teacher-model-id> \
+  --device cuda
+
+脚本只写新的 manifest，不覆盖原始 manifest。普通 WavLM SSL checkpoint 可以用于
+接口调试，但论文实验应使用明确经过 speaker verification 训练的 teacher，并记录
+model-id 和 embedding 维度。
+
 用法：
     from dasr.data.tse_dataset import TseCollator, TseDataset
     dataset = TseDataset("data/tse/train/manifest.jsonl", verify_audio=True)

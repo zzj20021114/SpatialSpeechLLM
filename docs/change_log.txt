@@ -129,3 +129,16 @@
 
 4. tests/test_tse_data.py
    原因：验证 teacher embedding 字段可随 manifest 读取，且不影响原有样本契约。
+
+[2026-09-09] 第六阶段：新增冻结 speaker teacher embedding 提取脚本
+
+修改脚本/文件：
+1. dasr/data/extract_teacher_embeddings.py
+   原因：从 enrollment 音频批量生成归一化 teacher embedding，并写入新的 TSE
+   manifest，为第一阶段 cue distillation 提供可复现输入；脚本不覆盖原始数据。
+
+2. docs/tse_dataset_interface.txt
+   原因：补充 teacher embedding 生成命令、模型选择约束和实验记录要求。
+
+3. tests/test_tse_data.py
+   原因：验证 embedding 归一化逻辑；无 torch/transformers 时仍可运行数据测试。

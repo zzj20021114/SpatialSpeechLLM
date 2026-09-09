@@ -15,6 +15,7 @@ from dasr.data.generate_tse_mixtures import (  # noqa: E402
 )
 from dasr.data.build_speech_manifest import _from_wav_scp_global_transcript  # noqa: E402
 from dasr.data.tse_dataset import TseDataset  # noqa: E402
+from dasr.data.extract_teacher_embeddings import l2_normalize  # noqa: E402
 
 
 def _write(path, signal, sample_rate=16000):
@@ -25,6 +26,11 @@ def test_speaker_id_and_side_contract():
     assert infer_speaker_id({"key": "BAC009S0002W0122", "wav": "x.wav"}) == "S0002"
     assert side_from_azimuth(90.0) == "左"
     assert side_from_azimuth(270.0) == "右"
+
+
+def test_teacher_embedding_normalization():
+    embedding = l2_normalize(np.array([3.0, 4.0], dtype=np.float32))
+    assert np.allclose(embedding, [0.6, 0.8])
 
 
 def test_ideal_tse_scene_is_additive_and_target_conditioned():
