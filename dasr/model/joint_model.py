@@ -27,6 +27,7 @@ from .tse_losses import (
     side_loss,
     si_sdr_loss,
     speaker_consistency_loss,
+    speaker_distillation_loss,
     vad_loss,
     complex_mask_to_waveform,
 )
@@ -52,6 +53,13 @@ class JointTargetSpeechModel(nn.Module):
         )
         self.tse_heads = TseMultiTaskHeads(cfg.tse_head)
         self.projector = PixelShuffleProjector(cfg.projector)
+        if cfg.tse_head.teacher_embed_dim == cfg.tse_head.speaker_embed_dim:
+            self.teacher_projection = nn.Identity()
+        else:
+            self.teacher_projection = nn.Linear(
+                cfg.tse_head.teacher_embed_dim,
+                cfg.tse_head.speaker_embed_dim,
+            )
         self.decoder = decoder
         self.tokenizer = tokenizer
 
@@ -184,6 +192,14 @@ class JointTargetSpeechModel(nn.Module):
             ),
             "side": side_loss(outputs["side_logits"], batch["target_side"]),
         }
+        if "teacher_embedding" in batch:
+            teacher = self.teacher_projection(batch["teacher_embedding"])
+            losses["enrollment_distill"] = speaker_distillation_loss(
+                outputs["speaker_embedding"], teacher
+            )
+            losses["target_distill"] = speaker_distillation_loss(
+                outputs["target_speaker_embedding"], teacher
+            )
         target_activity = batch["target_activity"]
         target_activity = F.interpolate(
             target_activity.unsqueeze(1), size=outputs["vad_logits"].shape[1], mode="nearest"

@@ -109,6 +109,7 @@ def test_tse_dataset_resolves_manifest_audio():
             "target_elevation_deg": 0.0,
             "target_speaker_id": "spk_a",
             "target_transcription": "测试",
+            "teacher_embedding": [0.1, 0.2, 0.3, 0.4],
             "source_refs": [
                 {"role": "target", "active_samples": 280},
                 {"role": "interferer", "active_samples": 320},
@@ -124,3 +125,4 @@ def test_tse_dataset_resolves_manifest_audio():
     assert item["pair_id"] == "tse_test_0"
     assert os.path.isabs(item["mixture_audio"])
     assert item["target_side"] == "左"
+    assert item["teacher_embedding"] == [0.1, 0.2, 0.3, 0.4]

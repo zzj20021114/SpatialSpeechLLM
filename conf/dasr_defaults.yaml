@@ -45,6 +45,7 @@ tse_head:
   token_dim: 768
   mask_freq_bins: 201
   speaker_embed_dim: 256
+  teacher_embed_dim: 256
   num_sides: 2
 
 projector:

@@ -86,6 +86,16 @@ def speaker_consistency_loss(
     return (1.0 - F.cosine_similarity(estimated_embedding, enrollment_embedding, dim=-1)).mean()
 
 
+def speaker_distillation_loss(
+    student_embedding: torch.Tensor,
+    teacher_embedding: torch.Tensor,
+) -> torch.Tensor:
+    """Align a trainable speaker representation with a frozen teacher."""
+    student = F.normalize(student_embedding, dim=-1)
+    teacher = F.normalize(teacher_embedding.detach(), dim=-1)
+    return (1.0 - F.cosine_similarity(student, teacher, dim=-1)).mean()
+
+
 def vad_loss(logits: torch.Tensor, target: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
     loss = F.binary_cross_entropy_with_logits(logits, target, reduction="none")
     if mask is not None:

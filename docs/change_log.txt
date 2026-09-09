@@ -111,3 +111,21 @@
 
 3. dasr/model/__init__.py 和 tests/test_tse_model.py
    原因：导出联合模型并增加 mask 重建输出形状与数值稳定性测试。
+
+[2026-09-09] 第五阶段：引入 speaker teacher 两阶段蒸馏接口
+
+修改脚本/文件：
+1. dasr/model/config.py 和 conf/dasr_defaults.yaml
+   原因：增加 teacher embedding 维度配置，为冻结的 WavLM/ECAPA/WeSpeaker
+   speaker teacher 提供可配置接口。
+
+2. dasr/data/tse_dataset.py 和 docs/tse_dataset_interface.txt
+   原因：允许 manifest 携带可选 teacher_embedding，并在 collator 中组成 batch，
+   支持先训练目标身份表示、再训练 TSE/ASR 的两阶段策略。
+
+3. dasr/model/tse_losses.py 和 dasr/model/joint_model.py
+   原因：增加 enrollment/target speaker embedding 的 cosine distillation loss，
+   teacher 不反向传播；对应近期 TSE 工作中冻结 speaker teacher 和 cue pretraining 的做法。
+
+4. tests/test_tse_data.py
+   原因：验证 teacher embedding 字段可随 manifest 读取，且不影响原有样本契约。

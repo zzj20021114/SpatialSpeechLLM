@@ -203,7 +203,7 @@ class TseCollator:
             target_activity[index, :target_frames] = 1.0
             interferer_activity[index, :interferer_frames] = 1.0
 
-        return {
+        batch = {
             "mixture_audio": mixture_batch,
             "target_audio": target_batch,
             "interferer_audio": interferer_batch,
@@ -231,3 +231,9 @@ class TseCollator:
             "target_speaker_ids": [record["target_speaker_id"] for record in features],
             "meta": features,
         }
+        teacher_embeddings = [record.get("teacher_embedding") for record in features]
+        if all(embedding is not None for embedding in teacher_embeddings):
+            batch["teacher_embedding"] = torch.tensor(
+                teacher_embeddings, dtype=torch.float32
+            )
+        return batch

@@ -26,12 +26,19 @@ target_side         [B]，左=0，右=1
 target_azimuth_deg  [B]
 target_elevation_deg[B]
 target_transcriptions 和 target_speaker_ids
+teacher_embedding（可选）[B,E]，由冻结的 WavLM/ECAPA/WeSpeaker teacher 预先计算
 
 当前接口不负责 tokenizer，也不负责模型前向。后续可以分别接入：
 1. enrollment speaker encoder；
 2. target-conditioned TSE mask head；
 3. SI-SDR、speaker embedding、VAD 和 DOA loss；
 4. 当前 Qwen ASR decoder。
+
+两阶段 speaker cue 训练
+------------------------
+若 manifest 包含 teacher_embedding，第一阶段可只优化 enrollment/target speaker
+embedding 与 teacher 的 cosine distillation；第二阶段再加入 TSE、VAD、DOA 和 ASR
+联合损失。teacher embedding 不反向传播，teacher 模型本身保持冻结。
 
 用法：
     from dasr.data.tse_dataset import TseCollator, TseDataset

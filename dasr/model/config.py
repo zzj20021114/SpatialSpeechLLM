@@ -120,6 +120,7 @@ class TseHeadConfig:
     token_dim: int = 768
     mask_freq_bins: int = 201
     speaker_embed_dim: int = 256
+    teacher_embed_dim: int = 256
     num_sides: int = 2
 
 
