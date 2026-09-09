@@ -1,0 +1,39 @@
+TSE 第二阶段数据接口
+====================
+
+TseDataset
+----------
+输入是 generate_tse_mixtures.py 产生的 manifest.jsonl。每条记录解析四个音频：
+
+mixture_audio       [4, T] FOA 混合音频
+target_clean_audio  [T] 目标干净语音
+interferer_audio    [T] 干扰语音
+enrollment_audio    [T_ref] 目标说话人参考语音
+
+TseCollator
+-----------
+输出后续联合模型需要的 batch：
+
+mixture_audio       [B, 4, T]
+target_audio        [B, T]
+interferer_audio    [B, T]
+enrollment_audio    [B, T_ref]
+mixture_lengths     [B]
+enrollment_lengths  [B]
+target_activity     [B, F]，第一阶段按 active_samples 生成粗粒度活动标签
+interferer_activity [B, F]
+target_side         [B]，左=0，右=1
+target_azimuth_deg  [B]
+target_elevation_deg[B]
+target_transcriptions 和 target_speaker_ids
+
+当前接口不负责 tokenizer，也不负责模型前向。后续可以分别接入：
+1. enrollment speaker encoder；
+2. target-conditioned TSE mask head；
+3. SI-SDR、speaker embedding、VAD 和 DOA loss；
+4. 当前 Qwen ASR decoder。
+
+用法：
+    from dasr.data.tse_dataset import TseCollator, TseDataset
+    dataset = TseDataset("data/tse/train/manifest.jsonl", verify_audio=True)
+    collator = TseCollator()

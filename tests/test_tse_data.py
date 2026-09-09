@@ -14,6 +14,7 @@ from dasr.data.generate_tse_mixtures import (  # noqa: E402
     side_from_azimuth,
 )
 from dasr.data.build_speech_manifest import _from_wav_scp_global_transcript  # noqa: E402
+from dasr.data.tse_dataset import TseDataset  # noqa: E402
 
 
 def _write(path, signal, sample_rate=16000):
@@ -83,3 +84,43 @@ def test_wav_scp_global_transcript_pairing():
         "txt": "你好世界",
         "lang": "zh",
     }]
+
+
+def test_tse_dataset_resolves_manifest_audio():
+    with tempfile.TemporaryDirectory() as tmp:
+        mixture = np.zeros((4, 320), dtype=np.float32)
+        mono = np.ones(320, dtype=np.float32)
+        for name, data in (
+            ("mixture.wav", mixture.T),
+            ("target.wav", mono),
+            ("interferer.wav", mono),
+            ("enrollment.wav", mono[:160]),
+        ):
+            _write(os.path.join(tmp, name), data)
+        manifest = os.path.join(tmp, "manifest.jsonl")
+        record = {
+            "pair_id": "tse_test_0",
+            "mixture_audio": "mixture.wav",
+            "target_clean_audio": "target.wav",
+            "interferer_audio": "interferer.wav",
+            "enrollment_audio": "enrollment.wav",
+            "target_side": "左",
+            "target_azimuth_deg": 90.0,
+            "target_elevation_deg": 0.0,
+            "target_speaker_id": "spk_a",
+            "target_transcription": "测试",
+            "source_refs": [
+                {"role": "target", "active_samples": 280},
+                {"role": "interferer", "active_samples": 320},
+            ],
+        }
+        with open(manifest, "w", encoding="utf-8") as f:
+            f.write(__import__("json").dumps(record, ensure_ascii=False) + "\n")
+
+        dataset = TseDataset(manifest, verify_audio=True)
+        item = dataset[0]
+
+    assert len(dataset) == 1
+    assert item["pair_id"] == "tse_test_0"
+    assert os.path.isabs(item["mixture_audio"])
+    assert item["target_side"] == "左"

@@ -58,3 +58,16 @@
 1. docs/tse_data_contract.txt
    原因：记录 /public/AISHELL1 的 scp、全局转录和本地路径回退参数，确保
    理想 TSE 数据可从当前公共数据目录复现。
+
+[2026-09-09] 第二阶段：实现 TSE Dataset 与 batch 接口
+
+修改脚本/文件：
+1. dasr/data/tse_dataset.py
+   原因：将 TSE manifest 解析为 mixture、target、interferer、enrollment 四路
+   音频，并提供长度、粗粒度 VAD、左右/DOA、转录和说话人 ID，供后续联合模型使用。
+
+2. docs/tse_dataset_interface.txt
+   原因：固定 Dataset/Collator 的张量形状和字段契约，避免后续模型分支各自解释数据。
+
+3. tests/test_tse_data.py
+   原因：验证 TSE Dataset 的相对路径解析、音频校验和 target 元数据读取。
