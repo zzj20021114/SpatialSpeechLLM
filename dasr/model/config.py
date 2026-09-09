@@ -92,6 +92,38 @@ class SpatialEncoderConfig:
 
 
 @dataclass
+class EnrollmentEncoderConfig:
+    """目标说话人 enrollment 编码器。"""
+    n_fft: int = 400
+    win_length: int = 400
+    hop_length: int = 160
+    hidden_dim: int = 384
+    output_dim: int = 256
+    num_layers: int = 3
+    num_heads: int = 6
+    dropout: float = 0.1
+
+
+@dataclass
+class TargetFusionConfig:
+    """将 enrollment 身份条件注入 FOA 空间 token。"""
+    token_dim: int = 768
+    speaker_dim: int = 256
+    num_heads: int = 12
+    dropout: float = 0.1
+    similarity_temperature: float = 5.0
+
+
+@dataclass
+class TseHeadConfig:
+    """TSE、VAD、DOA 和 speaker consistency 多任务头。"""
+    token_dim: int = 768
+    mask_freq_bins: int = 201
+    speaker_embed_dim: int = 256
+    num_sides: int = 2
+
+
+@dataclass
 class ProjectorConfig:
     """MLP 投影器：编码器 token -> 解码器隐空间（Qwen3-8B hidden=4096）。
 
@@ -171,6 +203,9 @@ class DasrConfig:
     """顶层配置。"""
     audio_frontend: AudioFrontendConfig = field(default_factory=AudioFrontendConfig)
     spatial_encoder: SpatialEncoderConfig = field(default_factory=SpatialEncoderConfig)
+    enrollment_encoder: EnrollmentEncoderConfig = field(default_factory=EnrollmentEncoderConfig)
+    target_fusion: TargetFusionConfig = field(default_factory=TargetFusionConfig)
+    tse_head: TseHeadConfig = field(default_factory=TseHeadConfig)
     projector: ProjectorConfig = field(default_factory=ProjectorConfig)
     decoder: DecoderConfig = field(default_factory=DecoderConfig)
     seld_head: SeldHeadConfig = field(default_factory=SeldHeadConfig)
@@ -188,7 +223,8 @@ class DasrConfig:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DasrConfig":
         cfg = cls()
-        for section in ("audio_frontend", "spatial_encoder", "projector",
+        for section in ("audio_frontend", "spatial_encoder", "enrollment_encoder",
+                        "target_fusion", "tse_head", "projector",
                         "decoder", "seld_head", "data", "train"):
             sub = data.get(section)
             if not sub:

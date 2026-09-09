@@ -24,6 +24,29 @@ spatial_encoder:
   resample_mode: conv
   freeze_backbone: true
 
+enrollment_encoder:
+  n_fft: 400
+  win_length: 400
+  hop_length: 160
+  hidden_dim: 384
+  output_dim: 256
+  num_layers: 3
+  num_heads: 6
+  dropout: 0.1
+
+target_fusion:
+  token_dim: 768
+  speaker_dim: 256
+  num_heads: 12
+  dropout: 0.1
+  similarity_temperature: 5.0
+
+tse_head:
+  token_dim: 768
+  mask_freq_bins: 201
+  speaker_embed_dim: 256
+  num_sides: 2
+
 projector:
   input_dim: 768
   shuffle_factor: 1          # 不降采样，保持 12.5 Hz 供 ASR

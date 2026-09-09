@@ -71,3 +71,30 @@
 
 3. tests/test_tse_data.py
    原因：验证 TSE Dataset 的相对路径解析、音频校验和 target 元数据读取。
+
+[2026-09-09] 第三阶段：目标条件空间编码和多任务头
+
+修改脚本/文件：
+1. dasr/model/config.py 和 conf/dasr_defaults.yaml
+   原因：增加 enrollment encoder、target fusion 和 TSE head 的结构配置，保持
+   Qwen3 解码器配置不变。
+
+2. dasr/model/enrollment_encoder.py
+   原因：将目标说话人 enrollment 编码为归一化 speaker embedding，作为目标选择条件。
+
+3. dasr/model/target_fusion.py
+   原因：使用 enrollment cross-attention、token-speaker 相似度门控和 FiLM 调制，
+   将目标身份注入 FOA 空间 token，形成 target-conditioned 表征。
+
+4. dasr/model/target_conditioned_encoder.py
+   原因：组合空间编码器、enrollment encoder 和 target fusion，提供后续训练统一接口。
+
+5. dasr/model/tse_heads.py 和 dasr/model/tse_losses.py
+   原因：新增 complex mask、VAD、DOA、speaker embedding、左右方向输出及 SI-SDR、
+   speaker consistency、VAD、DOA、side 联合损失。
+
+6. dasr/model/__init__.py
+   原因：导出第三阶段新增模块，方便训练入口复用。
+
+7. tests/test_tse_model.py
+   原因：验证目标条件模块和多任务头的张量形状及损失数值稳定性；无 torch 环境时自动跳过。
