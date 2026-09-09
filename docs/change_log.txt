@@ -167,3 +167,14 @@
 2. dasr 环境开发依赖
    原因：在已有 torch/transformers/peft 的 dasr 环境中补装 pytest，支持完整模型测试；
    未修改 base 环境，也未重新安装 torch。
+
+[2026-09-09] 第七阶段：新增 cue distillation/joint TSE 训练入口
+
+修改脚本/文件：
+1. dasr/tse_train.py
+   原因：将论文中的两阶段策略落地为可执行训练入口：cue_distill 先对齐
+   speaker teacher，joint 再优化共享 target token 的 TSE、speaker、VAD、DOA 和 side loss，
+   全程不加载 Qwen。
+
+2. docs/tse_training_plan.txt
+   原因：记录两个训练阶段的输入要求、命令、冻结策略和输出 checkpoint 路径。

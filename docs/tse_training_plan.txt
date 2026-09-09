@@ -1,0 +1,30 @@
+TSE 训练阶段
+============
+
+第一阶段：cue_distill
+---------------------
+输入 manifest 必须包含 teacher_embedding。冻结 speaker teacher，只训练：
+enrollment encoder、target fusion、speaker head 和 teacher projection。
+目标是让 enrollment/target 表示先稳定对齐 speaker teacher。
+
+命令：
+conda run -n dasr python -m dasr.tse_train \
+  --manifest data/tse/train/manifest_teacher.jsonl \
+  --output-dir runs/tse_cue \
+  --stage cue_distill --device cuda
+
+第二阶段：joint
+---------------
+使用共享 target token 联合训练 SI-SDR、speaker consistency、VAD、DOA 和 side。
+默认冻结 Qwen，不加载任何大模型 decoder；空间 backbone 默认冻结，可用
+--unfreeze-spatial 做后续实验。
+
+命令：
+conda run -n dasr python -m dasr.tse_train \
+  --manifest data/tse/train/manifest_teacher.jsonl \
+  --output-dir runs/tse_joint \
+  --stage joint --device cuda
+
+每次训练输出：
+- runs/<name>/train.log
+- runs/<name>/<stage>_final_trainable.pt
