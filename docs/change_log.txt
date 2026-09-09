@@ -142,3 +142,28 @@
 
 3. tests/test_tse_data.py
    原因：验证 embedding 归一化逻辑；无 torch/transformers 时仍可运行数据测试。
+
+[2026-09-09] 修正 Torch 环境下联合模型导入错误
+
+修改脚本/文件：
+1. dasr/model/joint_model.py
+   原因：删除不存在且未使用的 masked_mean 导入；该问题只会在真实 torch
+   环境导入 dasr.model 时暴露，静态编译无法覆盖。
+
+[2026-09-09] 增加完整联合模型 smoke 测试
+
+修改脚本/文件：
+1. tests/test_tse_model.py
+   原因：使用小配置验证 JointTargetSpeechModel 的完整前向、complex mask 重建、
+   teacher distillation 和联合 loss，而不加载 Qwen 或大模型权重。
+
+[2026-09-09] 校准并记录训练环境
+
+修改脚本/文件：
+1. docs/environment_setup.txt
+   原因：确认训练应使用已有的 dasr conda 环境；记录 Python、Torch、CUDA、GPU、
+   Transformers、PEFT 和 pytest 版本，避免误用没有 torch 的 base 环境。
+
+2. dasr 环境开发依赖
+   原因：在已有 torch/transformers/peft 的 dasr 环境中补装 pytest，支持完整模型测试；
+   未修改 base 环境，也未重新安装 torch。

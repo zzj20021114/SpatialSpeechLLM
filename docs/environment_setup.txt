@@ -1,0 +1,25 @@
+开发环境记录
+============
+
+当前项目应使用 conda 环境 `dasr`，不要使用 base 环境运行训练或模型测试。
+
+环境状态（2026-09-09）：
+- Python 3.11
+- torch 2.13.0+cu126
+- CUDA runtime 12.6
+- GPU：NVIDIA GeForce RTX 4080 SUPER（系统共检测到 8 张 GPU）
+- transformers 5.15.1
+- peft 0.20.0
+- pytest 9.1.1
+
+激活环境：
+    conda activate dasr
+
+无交互 shell 中运行：
+    conda run -n dasr python -m pytest -q
+
+验证 GPU：
+    conda run -n dasr python -c "import torch; print(torch.cuda.is_available())"
+
+说明：base 环境是 Python 3.13，未安装 torch；此前的 torch 缺失提示来自 base，
+不代表 dasr 专属环境缺少训练依赖。
