@@ -1,0 +1,11 @@
+{
+  "samples": 50,
+  "CER": 2.277602871889575,
+  "WER": 1.5263157894736843,
+  "side_accuracy": 0.3684210526315789,
+  "azimuth_MAE_deg": null,
+  "elevation_MAE_deg": null,
+  "azimuth_EM": 0.0,
+  "elevation_EM": 0.0,
+  "joint_accuracy": 0.0
+}

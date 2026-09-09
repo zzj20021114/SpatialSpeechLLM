@@ -1,0 +1,75 @@
+# dasr 默认配置（自建编码器-解码器架构，与 dasr/model/config.py 一致）
+audio_frontend:
+  sample_rate: 16000
+  n_fft: 400
+  win_length: 400
+  hop_length: 160
+  num_mel_bins: 128
+  normalize_logmel: true
+
+spatial_encoder:
+  embed_dim: 768
+  foa_feature_channels: 7
+  patch_time: 16
+  patch_freq: 128
+  stride_time: 8
+  stride_freq: 128
+  num_layers: 12
+  num_heads: 12
+  ffn_dim: 3072
+  dropout: 0.1
+  attn_dropout: 0.1
+  relative_position_embeddings: true
+  target_token_rate: 12.5
+  resample_mode: conv
+  freeze_backbone: true
+
+projector:
+  input_dim: 768
+  shuffle_factor: 1          # 不降采样，保持 12.5 Hz 供 ASR
+  hidden_dim: 1024
+  output_dim: 4096           # Qwen3-8B hidden size
+
+decoder:
+  model_id: "Qwen/Qwen3-8B"
+  dtype: "bfloat16"
+  quantization: "none"       # none | 4bit（QLoRA）
+  device_map: null
+  max_memory: null
+  speech_token: "<|speech|>"
+  freeze_llm: true
+  lora_r: 16
+  lora_alpha: 32
+  lora_dropout: 0.1
+  lora_target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+seld_head:
+  num_classes: 13
+  activity_weight: 1.0
+  coord_weight: 1.0
+
+data:
+  qa_roots: ["data/qa"]
+  audio_root: "data"
+  split: "train"
+  sample_rate: 16000
+  max_audio_seconds: 20.0
+  prompt_config: "conf/directional_asr_prompt.yaml"
+  num_workers: 4
+
+train:
+  stage: "encoder_lora"      # seld_pretrain | projector_only | encoder_lora | full
+  batch_size: 2
+  grad_accum_steps: 4
+  epochs: 3
+  learning_rate: 3e-5
+  projector_lr: 1e-4
+  lora_lr: 3e-5
+  spatial_lr: 1e-5
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  max_grad_norm: 5.0
+  log_interval: 10
+  save_interval: 1000
+  output_dir: "runs/dasr"
+  seed: 42
